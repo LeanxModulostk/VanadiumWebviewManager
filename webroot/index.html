@@ -1,1 +1,441 @@
+<!doctype html>
+<html><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vanadium Manager</title>
+<style>
+  body{font-family:sans-serif;margin:16px;background:#111;color:#eee;padding-bottom:110px}
+  h2{margin:0 0 14px}
+  .banner{
+    width:100%;
+    height:auto;
+    border-radius:12px;
+    margin-bottom:16px;
+    display:block;
+    box-shadow:0 4px 16px rgba(0,0,0,0.5);
+  }
+  .row{display:flex;justify-content:space-between;align-items:center;
+       background:#1e1e1e;padding:12px;border-radius:10px;margin-bottom:10px}
+  .btns{display:flex;gap:8px}
+  small{color:#999;display:block;margin-top:2px}
+  button{background:#4caf50;color:#fff;border:0;padding:10px 16px;border-radius:8px;font-size:14px;cursor:pointer}
+  button.del{background:#e53935}
+  button.cancel{background:#444;color:#eee}
+  button.has-update{background:#ff9800}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  pre{background:#000;padding:10px;border-radius:8px;white-space:pre-wrap;min-height:60px;line-height:1.4}
 
+  /* Botón circular flotante (Izquierda abajo - Telegram) */
+  .fab-link{
+    position:fixed;
+    left:16px;
+    bottom:16px;
+    width:48px;
+    height:48px;
+    border-radius:50%;
+    overflow:hidden;
+    box-shadow:0 4px 16px rgba(0,0,0,0.6);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:100;
+    cursor:pointer;
+    border:2px solid #222;
+    background:#fff;
+  }
+  .fab-link:active{
+    transform:scale(0.92);
+  }
+  .fab-link-img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    border-radius:50%;
+    display:block;
+  }
+
+  /* Contenedor de botones flotantes (Derecha abajo) */
+  .fab-container{
+    position:fixed;
+    right:16px;
+    bottom:16px;
+    display:flex;
+    flex-direction:column;
+    align-items:flex-end;
+    gap:10px;
+    z-index:100;
+  }
+
+  /* Botón redondo rojo para cerrar */
+  .fab-close{
+    background:#e53935;
+    color:#fff;
+    border:0;
+    width:42px;
+    height:42px;
+    border-radius:50%;
+    font-size:18px;
+    font-weight:bold;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    box-shadow:0 4px 16px rgba(0,0,0,0.6);
+    cursor:pointer;
+    padding:0;
+  }
+
+  /* Botón de comprobar actualizaciones */
+  .fab{
+    background:#2196f3;
+    color:#fff;
+    border:0;
+    padding:12px 18px;
+    border-radius:28px;
+    font-size:14px;
+    font-weight:bold;
+    box-shadow:0 4px 16px rgba(0,0,0,0.6);
+    cursor:pointer;
+  }
+
+  /* Modal */
+  .modal-overlay{
+    position:fixed;top:0;left:0;right:0;bottom:0;
+    background:rgba(0,0,0,0.75);
+    display:flex;align-items:center;justify-content:center;
+    z-index:999;
+  }
+  .modal-box{
+    background:#1e1e1e;padding:20px;border-radius:12px;
+    width:85%;max-width:320px;text-align:center;
+    box-shadow:0 8px 24px rgba(0,0,0,0.6);
+  }
+  .modal-box h3{margin:0 0 10px;color:#fff;font-size:18px}
+  .modal-box p{margin:0 0 20px;color:#bbb;font-size:14px}
+  .modal-btns{display:flex;justify-content:center;gap:12px}
+</style></head>
+<body>
+<h2>Vanadium Manager</h2>
+
+<!-- Banner local del módulo -->
+<img src="banner.png" 
+     alt="Vanadium Banner" 
+     class="banner"
+     onerror="this.onerror=null;this.src='1792696540334.png'">
+
+<div id="list"></div>
+<p style="margin:8px 0 6px"><small>Download time depends on your internet connection and the server.</small></p>
+<pre id="log">Ready.</pre>
+
+<!-- Botón circular flotante (Telegram local del módulo) -->
+<a class="fab-link" 
+   onclick="openLink('https://t.me/modulostk', event)" 
+   title="Telegram: @modulostk">
+  <img src="channel.jpg" 
+       alt="Telegram" 
+       class="fab-link-img"
+       onerror="this.onerror=null;this.src='IMG_20261020_031858_219.jpg'">
+</a>
+
+<!-- Botones flotantes (Derecha abajo) -->
+<div class="fab-container">
+  <button class="fab-close" onclick="closeWebUI()" title="Close WebUI">✕</button>
+  <button id="btnCheck" class="fab" onclick="checkUpdates()">Check for updates</button>
+</div>
+
+<!-- Confirmation Modal -->
+<div id="confirmModal" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <h3 id="modalTitle">Uninstall?</h3>
+    <p id="modalMsg">Are you sure you want to uninstall?</p>
+    <div class="modal-btns">
+      <button id="modalCancel" class="cancel">Cancel</button>
+      <button id="modalConfirm" class="del">Uninstall</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const MOD = "/data/adb/modules/VanadiumWebviewManager"; // module.prop id
+// [id, name, package, isRemovable]
+const APPS = [
+  ["webview", "WebView", "app.vanadium.webview", false],
+  ["browser", "Browser", "app.vanadium.browser", true],
+  ["config",  "Config",  "app.vanadium.config",  true],
+];
+
+// Almacena versiones y tamaños remotos
+let remoteVersions = {};
+let remoteSizes = {};
+
+let n = 0;
+function run(cmd) {
+  return new Promise(res => {
+    const cb = "cb_" + (n++);
+    window[cb] = (code, out, err) => { delete window[cb]; res({code, out, err}); };
+    ksu.exec(cmd, "{}", cb);
+  });
+}
+
+function openLink(url, e) {
+  if (e) e.preventDefault();
+  run(`am start -a android.intent.action.VIEW -d "${url}"`).catch(() => {});
+  try { window.open(url, "_blank"); } catch(err) {}
+}
+
+function closeWebUI() {
+  if (window.ksu) {
+    if (typeof ksu.fullExit === "function") {
+      ksu.fullExit();
+      return;
+    }
+    if (typeof ksu.exit === "function") {
+      ksu.exit();
+      return;
+    }
+  }
+  window.close();
+  history.back();
+}
+
+async function version(pkg) {
+  const r = await run(`dumpsys package ${pkg} | grep -m1 versionName`);
+  const m = r.out.match(/versionName=(\S+)/);
+  return m ? m[1] : null;
+}
+
+function formatSize(bytes) {
+  const b = parseInt(bytes, 10);
+  if (!b || isNaN(b)) return null;
+  if (b >= 1024 * 1024) return (b / (1024 * 1024)).toFixed(1) + " MB";
+  if (b >= 1024) return (b / 1024).toFixed(0) + " KB";
+  return b + " B";
+}
+
+function setDisabled(v) {
+  document.querySelectorAll("button").forEach(x => x.disabled = v);
+}
+
+function formatLog(raw) {
+  const lines = raw.split(/[\r\n]+/).map(s => s.trim()).filter(Boolean);
+  const result = [];
+  let lastProgress = null;
+
+  for (const line of lines) {
+    const match = line.match(/(\d+(?:\.\d+)?%)/);
+    const isCurlBar = line.includes("#") || line.includes("=") || Boolean(match);
+
+    if (isCurlBar) {
+      if (match) lastProgress = match[1];
+    } else {
+      if (lastProgress) {
+        result.push("Download: 100%");
+        lastProgress = null;
+      }
+      result.push(line);
+    }
+  }
+
+  if (lastProgress) {
+    const pct = parseFloat(lastProgress);
+    const total = 20;
+    const filled = Math.min(total, Math.max(0, Math.round((pct / 100) * total)));
+    const bar = "█".repeat(filled) + "░".repeat(total - filled);
+    result.push(`[${bar}] ${lastProgress}`);
+  }
+
+  return result.join("\n");
+}
+
+function askUninstall(name, id) {
+  const modal = document.getElementById("confirmModal");
+  document.getElementById("modalTitle").textContent = `Uninstall ${name}`;
+  document.getElementById("modalMsg").textContent = `Are you sure you want to uninstall ${name}?`;
+  modal.style.display = "flex";
+
+  document.getElementById("modalCancel").onclick = () => {
+    modal.style.display = "none";
+  };
+
+  document.getElementById("modalConfirm").onclick = () => {
+    modal.style.display = "none";
+    action(`sh ${MOD}/vmgr.sh uninstall ${id}`, `Uninstalling ${id}...`);
+  };
+
+  modal.onclick = (e) => {
+    if (e.target === modal) modal.style.display = "none";
+  };
+}
+
+async function checkUpdates() {
+  const log = document.getElementById("log");
+  setDisabled(true);
+  log.textContent = "Checking for updates and file sizes on GitLab...\n";
+
+  const apiUrl = "https://gitlab.com/api/v4/projects/grapheneos%2Fplatform_external_vanadium/repository/commits?ref_name=17&per_page=5";
+  const r = await run(`"${MOD}/bin/curl" -s --fail --location --connect-timeout 10 --retry 1 --dns-servers 1.1.1.1,1.0.0.1 "${apiUrl}"`);
+
+  if (!r.out || r.code !== 0) {
+    log.textContent = "Failed to connect to GitLab. Please check your internet connection.";
+    setDisabled(false);
+    return;
+  }
+
+  try {
+    const commits = JSON.parse(r.out);
+    let latestVer = null;
+    let configVer = null;
+
+    for (const c of commits) {
+      const m = c.title.match(/\b(\d+\.\d+\.\d+\.\d+)\b/);
+      if (m && !latestVer) {
+        latestVer = m[1];
+      }
+      const mc = c.title.match(/config.*?(\d+(?:\.\d+)*)/i);
+      if (mc && !configVer) {
+        configVer = mc[1];
+      }
+    }
+
+    if (!latestVer) {
+      log.textContent = "Could not determine the latest version in the repository.";
+      setDisabled(false);
+      return;
+    }
+
+    remoteVersions["webview"] = latestVer;
+    remoteVersions["browser"] = latestVer;
+    remoteVersions["config"]  = configVer || latestVer;
+
+    const sizeCmd = `for id in webview browser config; do
+      (
+        case $id in
+          webview) u="https://gitlab.com/grapheneos/platform_external_vanadium/-/raw/17/prebuilt/arm64-multilib/VanadiumWebView.apk" ;;
+          browser) u="https://gitlab.com/grapheneos/platform_external_vanadium/-/raw/17/prebuilt/arm64/VanadiumBrowser.apk" ;;
+          config)  u="https://gitlab.com/grapheneos/platform_external_vanadium/-/raw/17/prebuilt/VanadiumConfig.apk" ;;
+        esac
+        len=$("${MOD}/bin/curl" -sIL --connect-timeout 8 --dns-servers 1.1.1.1,1.0.0.1 "$u" | grep -i '^content-length:' | tail -n1 | tr -d '\\r' | awk '{print $2}')
+        echo "$id:$len"
+      ) &
+    done; wait`;
+
+    const sizeRes = await run(sizeCmd);
+    if (sizeRes.out) {
+      sizeRes.out.split("\n").forEach(line => {
+        const parts = line.split(":");
+        if (parts.length === 2) {
+          const s = formatSize(parts[1]);
+          if (s) remoteSizes[parts[0].trim()] = s;
+        }
+      });
+    }
+
+    let summary = `Latest version on GitLab: ${latestVer}\n\n`;
+    for (const [id, name, pkg] of APPS) {
+      const v = await version(pkg);
+      const rem = remoteVersions[id];
+      const sz = remoteSizes[id] ? ` (${remoteSizes[id]})` : "";
+
+      if (rem) {
+        if (!v) {
+          summary += `• ${name}: Not installed\n  Available: ${rem}${sz}\n`;
+        } else if (v.startsWith(rem) || v === rem) {
+          summary += `• ${name}: Up to date (${v})${sz}\n`;
+        } else {
+          summary += `• ${name}: Update available\n  Installed: ${v}\n  Available: ${rem}${sz}\n`;
+        }
+      } else {
+        summary += `• ${name}: ${v ? "Installed (" + v + ")" : "Not installed"}\n`;
+      }
+    }
+
+    log.textContent = summary.trim();
+    await render();
+  } catch (e) {
+    log.textContent = "Error processing response from GitLab.";
+  }
+
+  setDisabled(false);
+}
+
+async function render() {
+  const list = document.getElementById("list");
+  list.innerHTML = "";
+  for (const [id, name, pkg, removable] of APPS) {
+    const v = await version(pkg);
+    const rem = remoteVersions[id];
+    const sizeText = remoteSizes[id] ? ` • ${remoteSizes[id]}` : "";
+
+    let line1 = v ? "Installed: " + v : "Not installed";
+    let line2 = "";
+    let hasUpdate = false;
+
+    if (rem && v) {
+      if (v.startsWith(rem) || v === rem) {
+        line2 = `<small style="color:#4caf50;font-weight:bold">Up to date${sizeText}</small>`;
+      } else {
+        line2 = `<small style="color:#ff9800;font-weight:bold">Available: ${rem}${sizeText}</small>`;
+        hasUpdate = true;
+      }
+    } else if (rem && !v) {
+      line2 = `<small style="color:#90caf9">Available: ${rem}${sizeText}</small>`;
+    }
+
+    const row = document.createElement("div");
+    row.className = "row";
+    row.innerHTML = `<div>${name}<small>${line1}</small>${line2}</div>`;
+
+    const btns = document.createElement("div");
+    btns.className = "btns";
+
+    const b = document.createElement("button");
+    b.textContent = v ? "Update" : "Install";
+    if (hasUpdate) b.className = "has-update";
+    b.onclick = () => action(`sh ${MOD}/vmgr.sh ${id}`, "Starting " + id + "...");
+    btns.appendChild(b);
+
+    if (removable && v) {
+      const d = document.createElement("button");
+      d.className = "del";
+      d.textContent = "Uninstall";
+      d.onclick = () => askUninstall(name, id);
+      btns.appendChild(d);
+    }
+
+    row.appendChild(btns);
+    list.appendChild(row);
+  }
+}
+
+async function action(cmd, msg) {
+  const log = document.getElementById("log");
+  setDisabled(true);
+  log.textContent = msg + "\n";
+
+  const logFile = "/data/local/tmp/vmgr.log";
+  const doneFile = "/data/local/tmp/vmgr.done";
+
+  await run(`rm -f ${logFile} ${doneFile}`);
+  await run(`( ${cmd} > ${logFile} 2>&1 ; echo $? > ${doneFile} ) &`);
+
+  await new Promise(resolve => {
+    const timer = setInterval(async () => {
+      const l = await run(`cat ${logFile} 2>/dev/null`);
+      if (l.out) {
+        log.textContent = formatLog(l.out);
+      }
+
+      const d = await run(`cat ${doneFile} 2>/dev/null`);
+      if (d.out && d.out.trim() !== "") {
+        clearInterval(timer);
+        resolve();
+      }
+    }, 400);
+  });
+
+  await render();
+  setDisabled(false);
+}
+
+render();
+</script>
+</body></html>
