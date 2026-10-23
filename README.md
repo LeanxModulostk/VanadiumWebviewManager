@@ -37,6 +37,7 @@ If Config is not installed, or is not signed with the key Vanadium was built to 
 - arm64 device.
 - Android 14+
 - Internet connection (APKs are downloaded from the GrapheneOS GitLab).
+- Module Meta (I recommend NoMount)
 
 ## Usage
 
