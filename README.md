@@ -35,6 +35,7 @@ If Config is not installed, or is not signed with the key Vanadium was built to 
 
 - Root with Magisk, KernelSU, KernelSU Next or APatch.
 - arm64 device.
+- Android 14+
 - Internet connection (APKs are downloaded from the GrapheneOS GitLab).
 
 ## Usage
