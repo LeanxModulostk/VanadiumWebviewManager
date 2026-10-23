@@ -13,3 +13,5 @@ if [ -n "$NEW_VER" ] && [ -n "$NEW_CODE" ]; then
     [ "$OLD_VER" != "$NEW_VER" ] && sed -i "s|^version=.*|version=$NEW_VER|" "$PROP"
     [ "$OLD_CODE" != "$NEW_CODE" ] && sed -i "s|^versionCode=.*|versionCode=$NEW_CODE|" "$PROP"
 fi
+
+exit 0
