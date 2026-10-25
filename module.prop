@@ -6,4 +6,6 @@ author=@LeanHijosdesusMadres
 description=Vanadium: GrapheneOS's hardened Chromium-based browser and WebView, focused on security and privacy. Installs and updates WebView, Browser and Config, with WebUI.
 support=https://t.me/modulostk
 banner=leanbanner.jpg
+actionIcon=lean.jpg
+donate=https://www.paypal.me/LeanHijosdesusMadres
 iasthathelped=claude and gemini

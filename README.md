@@ -134,7 +134,11 @@ Vanadium Browser and Vanadium Config are **not** removed automatically. Uninstal
 
 Telegram: [@modulostk](https://t.me/modulostk)
 
-## Credits
+## Extras
+- Donations: [PayPal](https://www.paypal.me/LeanHijosdesusMadres) - [LiberaPay](https://liberapay.com/LeanHijosdesusMadres) - [Ko-fi](https://ko-fi.com/leantupapi) - [Binance](https://app.binance.com/qr/dplk7b28e9c123ff4e378b472505b0adba63) - [SociaBuzz](https://sociabuzz.com/leanhijosdesusmadres/support) - [More](https://t.me/modulemagiskChiase/4846)
 
+## Credits
+- [Zackptg5](https://github.com/Zackptg5) for the MMT-Ex template
+- [Topjohnwu](https://github.com/topjohnwu) for making Magisk
 - [GrapheneOS](https://grapheneos.org) for Vanadium.
 - APKs are downloaded from the [Vanadium repository](https://gitlab.com/grapheneos/platform_external_vanadium).
