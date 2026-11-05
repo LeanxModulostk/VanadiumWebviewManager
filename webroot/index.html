@@ -246,24 +246,58 @@ function formatLog(raw) {
   return result.join("\n");
 }
 
-function askUninstall(name, id) {
+function askConfirm(title, msg, btnText, btnClass, onOk) {
   const modal = document.getElementById("confirmModal");
-  document.getElementById("modalTitle").textContent = `Uninstall ${name}`;
-  document.getElementById("modalMsg").textContent = `Are you sure you want to uninstall ${name}?`;
+  document.getElementById("modalTitle").textContent = title;
+  document.getElementById("modalMsg").textContent = msg;
+  const ok = document.getElementById("modalConfirm");
+  ok.textContent = btnText;
+  ok.className = btnClass;
   modal.style.display = "flex";
 
   document.getElementById("modalCancel").onclick = () => {
     modal.style.display = "none";
   };
 
-  document.getElementById("modalConfirm").onclick = () => {
+  ok.onclick = () => {
     modal.style.display = "none";
-    action(`sh ${MOD}/vmgr.sh uninstall ${id}`, `Uninstalling ${id}...`);
+    onOk();
   };
 
   modal.onclick = (e) => {
     if (e.target === modal) modal.style.display = "none";
   };
+}
+
+function askUninstall(name, id) {
+  askConfirm(`Uninstall ${name}`, `Are you sure you want to uninstall ${name}?`,
+    "Uninstall", "del",
+    () => action(`sh ${MOD}/vmgr.sh uninstall ${id}`, `Uninstalling ${id}...`));
+}
+
+// Estado de los WebViews stock: {pkg: "enabled"|"disabled"}
+async function stockStatus() {
+  const r = await run(`sh ${MOD}/vmgr.sh stockwv status`);
+  const st = {};
+  (r.out || "").split("\n").forEach(l => {
+    const p = l.trim().split(":");
+    if (p.length === 2 && p[0].includes(".")) st[p[0]] = p[1];
+  });
+  return st;
+}
+
+function askStockToggle(isDisabled) {
+  if (isDisabled) {
+    askConfirm("Enable other WebViews",
+      "Stock/Google WebViews will be enabled again. Vanadium stays installed.",
+      "Enable", "",
+      () => action(`sh ${MOD}/vmgr.sh stockwv enable`, "Enabling other WebViews..."));
+  } else {
+    askConfirm("Disable other WebViews",
+      "Vanadium will be set as the active WebView and the stock/Google WebViews will be disabled. If anything goes wrong, enable them again from here.",
+      "Disable", "del",
+      () => action(`sh ${MOD}/vmgr.sh stockwv disable`, "Disabling other WebViews..."));
+  }
 }
 
 async function checkUpdates() {
@@ -401,6 +435,31 @@ async function render() {
       btns.appendChild(d);
     }
 
+    row.appendChild(btns);
+    list.appendChild(row);
+  }
+
+  // Fila: otros WebViews (stock/Google)
+  const st = await stockStatus();
+  const pkgs = Object.keys(st);
+  if (pkgs.length) {
+    const dis = pkgs.filter(p => st[p] === "disabled").length;
+    const allDisabled = dis === pkgs.length;
+    const label = allDisabled ? "All disabled"
+                : dis > 0 ? `${dis}/${pkgs.length} disabled`
+                : "All enabled";
+    const color = allDisabled ? "#ff9800" : "#4caf50";
+    const row = document.createElement("div");
+    row.className = "row";
+    row.innerHTML = `<div>Other WebViews<small>${pkgs.map(p => p.split(".").slice(-1)[0]).join(", ")}</small>` +
+                    `<small style="color:${color};font-weight:bold">${label}</small></div>`;
+    const b = document.createElement("button");
+    b.textContent = allDisabled ? "Enable" : "Disable";
+    if (!allDisabled) b.className = "del";
+    b.onclick = () => askStockToggle(allDisabled);
+    const btns = document.createElement("div");
+    btns.className = "btns";
+    btns.appendChild(b);
     row.appendChild(btns);
     list.appendChild(row);
   }
