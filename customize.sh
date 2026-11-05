@@ -119,14 +119,7 @@ chmod 0644 "$MODPATH/$OVERLAY_PATH/CustomWebViewOverlay.apk"
 # Cleanup temporary files
 rm -rf "$MODPATH/overlay" "$MODPATH/apks"
 
-ui_print "- Disabling conflicting WebView packages..."
-
-for PKG in com.android.webview com.google.android.webview com.google.android.trichromelibrary; do
-    if pm list packages | grep -q "$PKG"; then
-        pm disable "$PKG" 2>/dev/null
-        #pm disable-user --user 0 "$PKG" 2>/dev/null
-        #pm hide "$PKG" 2>/dev/null
-    fi
-done
+# Stock WebViews are NOT disabled at install time (can bootloop on some devices).
+# Use the WebUI toggle "Other WebViews" instead.
 
 ui_print "- Installation complete!"

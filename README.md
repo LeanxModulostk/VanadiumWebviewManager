@@ -1,5 +1,7 @@
 # Vanadium WebView Manager (Magisk / KernelSU / APatch)
 
+![](https://i.ibb.co/xqTQ16Tf/1792696540334.png)
+
 Installs and updates **Vanadium WebView**, **Vanadium Browser** and **Vanadium Config** from GrapheneOS, with a WebUI to manage them. Sets Vanadium as the active system WebView and includes a built-in anti-bootloop protection.
 
 ## What is Vanadium?
@@ -26,6 +28,7 @@ If Config is not installed, or is not signed with the key Vanadium was built to 
 ## Features
 
 - Install and update WebView, Browser and Config from the WebUI.
+- Disable / re-enable the other (stock) WebViews with one button in the WebUI. Disabling requires Vanadium WebView to be installed.
 - **Check for updates** button: compares the installed version of each component with the latest one on GitLab and highlights the ones that can be updated.
 - Uninstall Browser and Config (with a confirmation dialog).
 - Shows the installed version of each component.
@@ -46,7 +49,7 @@ If Config is not installed, or is not signed with the key Vanadium was built to 
 
 1. Flash the module zip from your root manager.
 2. The installer downloads Vanadium WebView from GitLab and shows the progress.
-3. It installs the WebView overlay and disables the conflicting stock WebView packages (`com.android.webview`, `com.google.android.webview` and `com.google.android.trichromelibrary`).
+3. It installs the WebView overlay. Stock WebViews are not touched at install time (disabling them there caused bootloops on some devices); use the **Other WebViews** toggle in the WebUI to disable or re-enable them (`com.android.webview`, `com.google.android.webview` and `com.google.android.trichromelibrary`).
 4. Reboot.
 
 On LineageOS-based ROMs the WebView is placed in `system/product/app/VWV`; on other ROMs in `system/app/VWV`.

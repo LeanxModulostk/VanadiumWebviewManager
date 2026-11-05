@@ -15,6 +15,46 @@ if [ "$1" = "uninstall" ]; then
   exit $?
 fi
 
+
+# Otros WebViews (stock/Google): estado, desactivar, activar
+if [ "$1" = "stockwv" ]; then
+  STOCK="com.android.webview com.google.android.webview com.google.android.trichromelibrary"
+  has() { pm list packages "$1" 2>/dev/null | grep -qx "package:$1"; }
+  case "$2" in
+    status)
+      for P in $STOCK; do
+        has "$P" || continue
+        if pm list packages -d "$P" 2>/dev/null | grep -qx "package:$P"; then
+          echo "$P:disabled"
+        else
+          echo "$P:enabled"
+        fi
+      done
+      exit 0 ;;
+    disable)
+      has app.vanadium.webview || { echo "Install Vanadium WebView first"; exit 1; }
+      echo "Setting Vanadium as active WebView..."
+      cmd webviewupdate set-webview-implementation app.vanadium.webview >/dev/null 2>&1 \
+        || { echo "Could not set Vanadium as WebView provider. Aborting."; exit 1; }
+      for P in $STOCK; do
+        has "$P" || continue
+        echo "Disabling $P..."
+        pm disable-user --user 0 "$P" >/dev/null 2>&1 || pm disable "$P" >/dev/null 2>&1
+      done
+      echo "Done"
+      exit 0 ;;
+    enable)
+      for P in $STOCK; do
+        has "$P" || continue
+        echo "Enabling $P..."
+        pm enable "$P" >/dev/null 2>&1
+      done
+      echo "Done"
+      exit 0 ;;
+    *) echo "Uso: $0 stockwv status|disable|enable"; exit 1 ;;
+  esac
+fi
+
 # Instalar / actualizar
 case "$1" in
   webview) URL="$BASE/arm64-multilib/VanadiumWebView.apk"; OPT="--install-location 1" ;;
