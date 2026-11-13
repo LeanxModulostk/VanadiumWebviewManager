@@ -1,9 +1,10 @@
 id=VanadiumWebviewManager
 name=Vanadium WebView Manager
-version=3
-versionCode=3
+version=3.1
+versionCode=31
 author=@LeanHijosdesusMadres
 description=Vanadium: GrapheneOS's hardened Chromium-based browser and WebView, focused on security and privacy. Installs and updates WebView, Browser and Config, with WebUI.
+updateJson=https://raw.githubusercontent.com/LeanxModulostk/VanadiumWebviewManager/master/module.json
 support=https://t.me/modulostk
 banner=leanbanner.jpg
 actionIcon=lean.jpg

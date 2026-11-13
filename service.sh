@@ -12,6 +12,9 @@ echo 0 > "$MODDIR/.bootcount"
 # Asegurar que Vanadium sea el WebView activo
 cmd webviewupdate set-webview-implementation app.vanadium.webview 2>/dev/null || true
 
+# Borrar APKs temporales que hayan quedado de una actualización
+rm -f /data/local/tmp/vanadium_*.apk
+
 # Sincronizar version y versionCode de module.prop con el WebView instalado
 sh "$MODDIR/syncprop.sh"
 

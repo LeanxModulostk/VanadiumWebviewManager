@@ -65,15 +65,25 @@ esac
 
 APK="$TMP/vanadium_$1.apk"
 
+# Limpiar restos de descargas anteriores y borrar el APK siempre al salir
+rm -f "$TMP"/vanadium_*.apk
+trap 'rm -f "$APK"' EXIT HUP INT TERM
+
 echo "Downloading $1..."
 "$MODDIR/bin/curl" --fail --location --connect-timeout 15 --retry 2 \
     --dns-servers 1.1.1.1,1.0.0.1 -# -o "$APK" "$URL" \
     || { echo "Download failed"; rm -f "$APK"; exit 1; }
 
 echo "Installing..."
-pm install -r $OPT "$APK"
-RC=$?
+# Abrir el APK, borrarlo del disco y instalar leyendo por stdin:
+# así el archivo desaparece ANTES de instalar y no depende de que el script
+# siga vivo (al actualizar el WebView, Android mata procesos).
+SIZE=$(stat -c %s "$APK" 2>/dev/null || wc -c < "$APK")
+exec 3< "$APK"
 rm -f "$APK"
+pm install -r -S "$SIZE" $OPT <&3
+RC=$?
+exec 3<&-
 
 if [ $RC -eq 0 ]; then
     echo "Done"
