@@ -463,6 +463,30 @@ async function render() {
     row.appendChild(btns);
     list.appendChild(row);
   }
+
+  // Fila: ajustes del sistema para elegir el WebView
+  const sRow = document.createElement("div");
+  sRow.className = "row";
+  sRow.innerHTML = `<div>WebView settings<small>Open Android's WebView implementation picker</small></div>`;
+  const sBtns = document.createElement("div");
+  sBtns.className = "btns";
+  const sb = document.createElement("button");
+  sb.textContent = "Open";
+  sb.onclick = openWebViewSettings;
+  sBtns.appendChild(sb);
+  sRow.appendChild(sBtns);
+  list.appendChild(sRow);
+}
+
+async function openWebViewSettings() {
+  const log = document.getElementById("log");
+  log.textContent = "Opening WebView settings...";
+  const r = await run("am start -a android.settings.WEBVIEW_SETTINGS");
+  if (r.code === 0 && !/Error/i.test(r.out || "")) {
+    log.textContent = "WebView settings opened.";
+  } else {
+    log.textContent = "Could not open WebView settings.\n" + ((r.out || "") + (r.err || "")).trim();
+  }
 }
 
 async function action(cmd, msg) {
