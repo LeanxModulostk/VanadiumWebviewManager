@@ -3,7 +3,7 @@
 schemaVersion: 1
 id: VanadiumWebviewManager
 name: Vanadium WebView Manager
-summary: Vanadium: GrapheneOS hardened Chromium-based browser and WebView, focused on security and privacy. Installs and updates WebView, Browser and Config, with WebUI.
+summary: Vanadium GrapheneOS hardened Chromium-based browser and WebView, focused on security and privacy. Installs and updates WebView, Browser and Config, with WebUI.
 description: README.md
 license: 
 homepage: https://github.com/LeanxModulostk/VanadiumWebviewManager
